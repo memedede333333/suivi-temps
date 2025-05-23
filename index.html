@@ -85,6 +85,40 @@
             font-size: 14px;
         }
 
+        .sync-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: syncPulse 2s infinite;
+        }
+
+        .sync-dot.syncing {
+            background: var(--warning);
+            animation: syncPulse 0.5s infinite;
+        }
+
+        .sync-dot.error {
+            background: var(--danger);
+            animation: none;
+        }
+
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
         .nav-tabs {
             display: flex;
             gap: 10px;
@@ -655,6 +689,32 @@
             color: #6b7280;
         }
 
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 10px;
@@ -673,8 +733,16 @@
     </style>
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div class="container">
         <div class="app-header">
+            <div class="sync-indicator">
+                <div class="sync-dot" id="syncDot"></div>
+                <span id="syncStatus">Synchronisé</span>
+            </div>
             <h1 class="app-title">⏱️ Suivi Temps</h1>
             <p class="app-subtitle">Gestion du temps de travail - Vidage maison</p>
             <svg class="settings-icon" onclick="openSettings()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -820,8 +888,8 @@
             </button>
             
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <button class="btn btn-success" onclick="importFromSheets()">
-                    📥 Importer depuis Google Sheets
+                <button class="btn btn-success" onclick="forceSync()">
+                    🔄 Forcer la synchronisation
                 </button>
             </div>
 
@@ -847,30 +915,188 @@
     <div class="floating-add" onclick="showTab('entry', event)">+</div>
 
     <script>
+        // Configuration Google Sheet
+        const DEFAULT_SHEET_ID = '105lRQVCpWnBsu0fkXgFVa_5z2Oup8m6eT7y1TjGp0xU'; // Votre vrai ID
+        
         // State management
         let appData = {
             sheetId: '',
-            persons: ['Jean', 'Marie', 'Pierre', 'Sophie'],
+            persons: [],
             entries: []
         };
 
+        let syncInProgress = false;
+        let lastSyncTime = null;
+
         // Initialize app
-        function initApp() {
-            const saved = localStorage.getItem('timeTrackingData');
-            if (saved) {
-                appData = JSON.parse(saved);
+        async function initApp() {
+            showLoading(true);
+            
+            // TOUJOURS réinitialiser les données au démarrage
+            appData = {
+                sheetId: '',
+                persons: [],
+                entries: []
+            };
+            
+            // Utiliser l'ID par défaut s'il existe, sinon chercher dans localStorage
+            if (DEFAULT_SHEET_ID) {
+                appData.sheetId = DEFAULT_SHEET_ID;
+            } else {
+                const savedSheetId = localStorage.getItem('sheetId');
+                if (savedSheetId) {
+                    appData.sheetId = savedSheetId;
+                }
+            }
+            
+            if (appData.sheetId) {
+                // Si on a un sheet configuré, synchroniser immédiatement
+                const success = await syncFromSheets();
+                
+                if (!success) {
+                    showSuccess('Erreur de connexion. Vérifiez votre Google Sheet.');
+                }
+            } else {
+                // Première utilisation
+                updateUI();
+                showSuccess('Bienvenue ! Configurez votre Google Sheet dans les paramètres.');
             }
             
             // Set today's date as default
             document.getElementById('date').valueAsDate = new Date();
             
+            showLoading(false);
+        }
+
+        // Synchronisation depuis Google Sheets (toujours depuis zéro)
+        async function syncFromSheets() {
+            if (!appData.sheetId) {
+                updateSyncStatus('error', 'Pas de sheet configuré');
+                return false;
+            }
+            
+            updateSyncStatus('syncing', 'Synchronisation...');
+            
+            // Réinitialiser les données avant chaque import
+            appData.persons = [];
+            appData.entries = [];
+            
+            try {
+                // URL publique pour lire le CSV
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${appData.sheetId}/export?format=csv`;
+                
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error('Impossible de lire le Google Sheet');
+                }
+                
+                const csv = await response.text();
+                const lines = csv.split('\n');
+                const entries = [];
+                let importedPersons = new Set();
+                
+                // Parcourir les lignes (ignorer l'en-tête)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Parser la ligne CSV
+                    const values = parseCSVLine(line);
+                    
+                    // Vérifier si l'entrée est supprimée (colonne G)
+                    if (values[6] && values[6].trim() !== '') {
+                        continue; // Ignorer les entrées supprimées
+                    }
+                    
+                    if (values.length >= 3) {
+                        const person = values[0];
+                        const dateStr = values[1];
+                        const hours = parseFloat(values[2]);
+                        const arrival = values[3] || 'Non renseigné';
+                        const departure = values[4] || 'Non renseigné';
+                        const tasksStr = values[5] || '';
+                        
+                        // Ajouter la personne si elle n'existe pas
+                        if (person && person !== '') {
+                            importedPersons.add(person);
+                        }
+                        
+                        // Convertir la date du format JJ/MM en format YYYY-MM-DD
+                        let formattedDate = '';
+                        if (dateStr && dateStr.includes('/')) {
+                            const [day, month] = dateStr.split('/');
+                            const year = new Date().getFullYear();
+                            formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        }
+                        
+                        // Parser les tâches
+                        const tasks = tasksStr ? tasksStr.split(',').map(t => t.trim()).filter(t => t) : [];
+                        
+                        if (person && formattedDate && hours) {
+                            entries.push({
+                                id: `${person}-${dateStr}-${i}`, // ID unique basé sur les données
+                                person: person,
+                                date: formattedDate,
+                                arrival: arrival,
+                                departure: departure,
+                                hours: hours,
+                                tasks: tasks.length > 0 ? tasks : []
+                            });
+                        }
+                    }
+                }
+                
+                // Mettre à jour les données (remplace tout)
+                appData.persons = Array.from(importedPersons).sort();
+                appData.entries = entries;
+                
+                // Mettre à jour l'interface
+                updateUI();
+                
+                lastSyncTime = new Date();
+                updateSyncStatus('success', 'Synchronisé');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Erreur de synchronisation:', error);
+                updateSyncStatus('error', 'Erreur de sync');
+                showSuccess('Erreur de synchronisation. Vérifiez votre connexion et que le sheet est partagé.');
+                return false;
+            }
+        }
+
+        // Mise à jour du statut de synchronisation
+        function updateSyncStatus(status, message) {
+            const dot = document.getElementById('syncDot');
+            const statusText = document.getElementById('syncStatus');
+            
+            dot.className = 'sync-dot';
+            if (status === 'syncing') {
+                dot.classList.add('syncing');
+            } else if (status === 'error') {
+                dot.classList.add('error');
+            }
+            
+            statusText.textContent = message;
+        }
+
+        // Mise à jour de l'interface
+        function updateUI() {
             updatePersonSelect();
-            updateStats();
             displayEntries();
+            updateStats();
         }
 
         // Tab management
-        function showTab(tabName, event) {
+        async function showTab(tabName, event) {
+            // TOUJOURS synchroniser avant de changer d'onglet pour avoir les dernières données
+            if (appData.sheetId && !syncInProgress) {
+                syncInProgress = true;
+                await syncFromSheets();
+                syncInProgress = false;
+            }
+            
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -895,13 +1121,6 @@
                     }
                 });
             }
-            
-            // Update data when showing tabs
-            if (tabName === 'list') {
-                displayEntries();
-            } else if (tabName === 'stats') {
-                updateStats();
-            }
         }
 
         // Settings management
@@ -915,16 +1134,31 @@
             document.getElementById('settingsModal').style.display = 'none';
         }
 
-        function saveSettings() {
-            appData.sheetId = document.getElementById('sheetId').value;
-            saveData();
-            updatePersonSelect();
+        async function saveSettings() {
+            const newSheetId = document.getElementById('sheetId').value;
+            
+            // Sauvegarder l'ID du sheet
+            appData.sheetId = newSheetId;
+            localStorage.setItem('sheetId', newSheetId);
+            
+            // Synchroniser immédiatement
+            if (newSheetId) {
+                showLoading(true);
+                await syncFromSheets();
+                showLoading(false);
+            }
+            
             closeSettings();
             showSuccess('Configuration sauvegardée !');
         }
 
         function displayPersonsList() {
             const container = document.getElementById('personsList');
+            if (appData.persons.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; font-size: 14px;">Aucune personne. Importez depuis Google Sheets.</p>';
+                return;
+            }
+            
             container.innerHTML = appData.persons.map((person, index) => `
                 <div class="entry-item" style="margin-bottom: 5px;">
                     <span>${person}</span>
@@ -939,11 +1173,11 @@
             
             if (name && !appData.persons.includes(name)) {
                 appData.persons.push(name);
-                saveData();
+                appData.persons.sort();
                 input.value = '';
                 displayPersonsList();
                 updatePersonSelect();
-                showSuccess(`${name} ajouté(e) !`);
+                showSuccess(`${name} ajouté(e) ! N'oubliez pas de l'ajouter aussi dans Google Sheets.`);
             }
         }
 
@@ -953,10 +1187,9 @@
             
             if (code === '333') {
                 appData.persons.splice(index, 1);
-                saveData();
                 displayPersonsList();
                 updatePersonSelect();
-                showSuccess(`${person} supprimé(e)`);
+                showSuccess(`${person} supprimé(e) localement. Pensez à supprimer aussi dans Google Sheets.`);
             } else if (code !== null) {
                 alert('Code incorrect');
             }
@@ -969,7 +1202,7 @@
         }
 
         // Entry management
-        function saveEntry() {
+        async function saveEntry() {
             const person = document.getElementById('person').value;
             const date = document.getElementById('date').value;
             const arrivalHour = document.getElementById('arrivalHour').value.padStart(2, '0');
@@ -1002,9 +1235,8 @@
                 tasks: tasks.split('\n').filter(t => t.trim())
             };
             
-            appData.entries.push(entry);
-            saveData();
-            syncToGoogleSheets(entry);
+            // Envoyer à Google Sheets
+            await syncToGoogleSheets(entry);
             
             // Reset form
             document.getElementById('person').value = '';
@@ -1014,10 +1246,11 @@
             document.getElementById('departureMin').value = '';
             document.getElementById('tasks').value = '';
             
-            showSuccess('Entrée enregistrée avec succès !');
+            // Rafraîchir les données
+            setTimeout(() => syncFromSheets(), 1000);
         }
 
-        function quickEntry() {
+        async function quickEntry() {
             const person = document.getElementById('person').value;
             const date = document.getElementById('date').value;
             const hours = parseFloat(document.getElementById('quickHours').value);
@@ -1037,12 +1270,13 @@
                 tasks: ['Saisie rapide']
             };
             
-            appData.entries.push(entry);
-            saveData();
-            syncToGoogleSheets(entry);
+            // Envoyer à Google Sheets
+            await syncToGoogleSheets(entry);
             
             document.getElementById('quickHours').value = '';
-            showSuccess('Saisie rapide enregistrée !');
+            
+            // Rafraîchir les données
+            setTimeout(() => syncFromSheets(), 1000);
         }
 
         function calculateHours(arrival, departure) {
@@ -1058,9 +1292,7 @@
 
         function displayEntries() {
             const container = document.getElementById('entriesList');
-            // Filtrer les entrées non supprimées et trier
-            const activeEntries = appData.entries.filter(e => !e.deleted);
-            const sortedEntries = [...activeEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sortedEntries = [...appData.entries].sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (sortedEntries.length === 0) {
                 container.innerHTML = `
@@ -1079,7 +1311,7 @@
                         <div class="entry-details">
                             📅 ${formatDate(entry.date)} | ⏰ ${entry.arrival} - ${entry.departure}
                         </div>
-                        ${entry.tasks.length > 0 ? `
+                        ${entry.tasks && entry.tasks.length > 0 ? `
                             <div class="task-list">
                                 ${entry.tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
                             </div>
@@ -1087,73 +1319,68 @@
                     </div>
                     <div style="display: flex; align-items: center;">
                         <span class="entry-hours">${entry.hours}h</span>
-                        <button class="btn btn-danger btn-small" onclick="deleteEntry(${entry.id})">🗑️</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteEntry('${entry.id}')">🗑️</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function deleteEntry(id) {
+        async function deleteEntry(id) {
             const code = prompt('Entrez le code de sécurité pour supprimer :');
             
             if (code === '333') {
-                const entry = appData.entries.find(e => e.id === id);
+                const entry = appData.entries.find(e => e.id == id);
                 if (entry) {
-                    // Marquer comme supprimé au lieu de supprimer
-                    entry.deleted = true;
-                    entry.deletedAt = new Date().toLocaleString('fr-FR');
+                    // Marquer comme supprimé dans Google Sheets
+                    await updateEntryInSheets(entry);
                     
-                    // Envoyer la mise à jour à Google Sheets
-                    if (appData.sheetId) {
-                        updateEntryInSheets(entry);
-                    }
+                    showSuccess('Suppression en cours...');
                     
-                    saveData();
-                    displayEntries();
-                    updateStats();
-                    showSuccess('Entrée supprimée');
+                    // Rafraîchir les données
+                    setTimeout(() => syncFromSheets(), 1500);
                 }
             } else if (code !== null) {
                 alert('Code incorrect');
             }
         }
         
-        // Nouvelle fonction pour mettre à jour une entrée dans Sheets
-        function updateEntryInSheets(entry) {
+        // Mise à jour d'une entrée dans Sheets (suppression)
+        async function updateEntryInSheets(entry) {
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlA0flQHjbFzzQUo0OnMgguuApvwwUEK2CmLXWpw-Koo7XJquH6yGO4D3fM8i5E9nx/exec';
             
             const dateObj = new Date(entry.date);
             const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
             
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'update',
-                    person: entry.person,
-                    date: formattedDate,
-                    hours: entry.hours,
-                    arrival: entry.arrival,
-                    departure: entry.departure,
-                    tasks: entry.tasks,
-                    deleted: entry.deletedAt
-                })
-            });
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'update',
+                        person: entry.person,
+                        date: formattedDate,
+                        hours: entry.hours,
+                        arrival: entry.arrival,
+                        departure: entry.departure,
+                        tasks: entry.tasks,
+                        deleted: new Date().toLocaleString('fr-FR')
+                    })
+                });
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour:', error);
+            }
         }
 
         function updateStats() {
-            // Filtrer les entrées non supprimées
-            const activeEntries = appData.entries.filter(e => !e.deleted);
-            
             // Calculate total hours
-            const totalHours = activeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+            const totalHours = appData.entries.reduce((sum, entry) => sum + entry.hours, 0);
             document.getElementById('totalHours').textContent = totalHours.toFixed(1);
             
             // Calculate total days
-            const uniqueDays = new Set(activeEntries.map(e => e.date)).size;
+            const uniqueDays = new Set(appData.entries.map(e => e.date)).size;
             document.getElementById('totalDays').textContent = uniqueDays;
             
             // Calculate average hours per day
@@ -1162,7 +1389,7 @@
             
             // Calculate hours per person
             const personHours = {};
-            activeEntries.forEach(entry => {
+            appData.entries.forEach(entry => {
                 personHours[entry.person] = (personHours[entry.person] || 0) + entry.hours;
             });
             
@@ -1212,24 +1439,24 @@
             }, 3000);
         }
 
-        function saveData() {
-            localStorage.setItem('timeTrackingData', JSON.stringify(appData));
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
         }
 
-        function resetApp() {
+        async function resetApp() {
             const code = prompt('Entrez le code de sécurité pour réinitialiser :');
             
             if (code === '333') {
-                if (confirm('Cette action supprimera toutes les données. Continuer ?')) {
-                    localStorage.removeItem('timeTrackingData');
+                if (confirm('Cette action supprimera la configuration locale. Les données Google Sheets resteront intactes. Continuer ?')) {
+                    localStorage.removeItem('sheetId');
                     appData = {
                         sheetId: '',
-                        persons: ['Jean', 'Marie', 'Pierre', 'Sophie'],
+                        persons: [],
                         entries: []
                     };
-                    initApp();
+                    updateUI();
                     closeSettings();
-                    showSuccess('Application réinitialisée');
+                    showSuccess('Configuration réinitialisée. Reconfigurez votre Google Sheet.');
                 }
             } else if (code !== null) {
                 alert('Code incorrect');
@@ -1237,140 +1464,65 @@
         }
 
         // Google Sheets integration
-        function syncToGoogleSheets(entry) {
-            if (!appData.sheetId) return;
+        async function syncToGoogleSheets(entry) {
+            if (!appData.sheetId) {
+                showSuccess('Pas de Google Sheet configuré. Données non envoyées.');
+                return;
+            }
             
-            // Votre URL Google Apps Script
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlA0flQHjbFzzQUo0OnMgguuApvwwUEK2CmLXWpw-Koo7XJquH6yGO4D3fM8i5E9nx/exec';
             
-            // Afficher un indicateur de chargement
-            showSuccess('Envoi vers Google Sheets...');
+            updateSyncStatus('syncing', 'Envoi...');
             
             // Formater la date en JJ/MM
             const dateObj = new Date(entry.date);
             const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
             
-            // Envoyer les données
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    person: entry.person,
-                    date: formattedDate,
-                    hours: entry.hours,
-                    arrival: entry.arrival,
-                    departure: entry.departure,
-                    tasks: entry.tasks
-                })
-            })
-            .then(() => {
-                console.log('Données envoyées à Google Sheets avec succès');
-            })
-            .catch(error => {
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        person: entry.person,
+                        date: formattedDate,
+                        hours: entry.hours,
+                        arrival: entry.arrival,
+                        departure: entry.departure,
+                        tasks: entry.tasks
+                    })
+                });
+                
+                showSuccess('Entrée enregistrée avec succès !');
+                updateSyncStatus('success', 'Synchronisé');
+                
+            } catch (error) {
                 console.error('Erreur lors de la synchronisation:', error);
-                showSuccess('Erreur de synchronisation - données sauvegardées localement');
-            });
+                updateSyncStatus('error', 'Erreur de sync');
+                showSuccess('Erreur de synchronisation - vérifiez votre connexion');
+            }
         }
 
-        // Import from Google Sheets
-        function importFromSheets() {
-            const code = prompt('Entrez le code de sécurité pour importer :');
-            
-            if (code !== '333') {
-                if (code !== null) alert('Code incorrect');
-                return;
-            }
-            
+        // Forcer la synchronisation
+        async function forceSync() {
             if (!appData.sheetId) {
-                alert('Veuillez d\'abord configurer l\'ID du Google Sheet');
+                alert('Configurez d\'abord l\'ID du Google Sheet');
                 return;
             }
             
-            showSuccess('Import en cours...');
+            showLoading(true);
+            // Réinitialiser avant de synchroniser
+            appData.persons = [];
+            appData.entries = [];
             
-            // URL publique pour lire le CSV
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${appData.sheetId}/export?format=csv`;
+            const success = await syncFromSheets();
+            showLoading(false);
             
-            fetch(csvUrl)
-                .then(response => response.text())
-                .then(csv => {
-                    // Parser le CSV
-                    const lines = csv.split('\n');
-                    const entries = [];
-                    let importedPersons = new Set(appData.persons);
-                    
-                    // Parcourir les lignes (ignorer l'en-tête)
-                    for (let i = 1; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        if (!line) continue;
-                        
-                        // Parser la ligne CSV en gérant les virgules dans les valeurs
-                        const values = parseCSVLine(line);
-                        
-                        // Vérifier si l'entrée est supprimée (colonne G)
-                        if (values[6] && values[6].trim() !== '') {
-                            continue; // Ignorer les entrées supprimées
-                        }
-                        
-                        if (values.length >= 3) {
-                            const person = values[0];
-                            const dateStr = values[1];
-                            const hours = parseFloat(values[2]);
-                            const arrival = values[3] || 'Non renseigné';
-                            const departure = values[4] || 'Non renseigné';
-                            const tasksStr = values[5] || '';
-                            
-                            // Ajouter la personne si elle n'existe pas
-                            if (person && person !== '') {
-                                importedPersons.add(person);
-                            }
-                            
-                            // Convertir la date du format JJ/MM en format YYYY-MM-DD
-                            let formattedDate = '';
-                            if (dateStr && dateStr.includes('/')) {
-                                const [day, month] = dateStr.split('/');
-                                const year = new Date().getFullYear();
-                                formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            }
-                            
-                            // Parser les tâches (séparées par des virgules)
-                            const tasks = tasksStr ? tasksStr.split(',').map(t => t.trim()).filter(t => t) : [];
-                            
-                            if (person && formattedDate && hours) {
-                                entries.push({
-                                    id: Date.now() + i,
-                                    person: person,
-                                    date: formattedDate,
-                                    arrival: arrival,
-                                    departure: departure,
-                                    hours: hours,
-                                    tasks: tasks.length > 0 ? tasks : ['Aucune tâche spécifiée']
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Mettre à jour la liste des personnes
-                    appData.persons = Array.from(importedPersons).sort();
-                    
-                    // Remplacer toutes les entrées par les nouvelles (éviter les doublons)
-                    appData.entries = entries;
-                    
-                    // Sauvegarder et mettre à jour l'interface
-                    saveData();
-                    updatePersonSelect();
-                    displayEntries();
-                    updateStats();
-                    
-                    showSuccess(`${entries.length} entrées importées avec succès !`);
-                })
-                .catch(error => {
-                    alert('Erreur lors de l\'import. Assurez-vous que votre Google Sheet est partagé en lecture.');
-                    console.error('Erreur import:', error);
-                });
+            if (success) {
+                showSuccess('Synchronisation réussie !');
+            }
         }
         
         // Fonction pour parser une ligne CSV correctement
@@ -1403,7 +1555,7 @@
             const title = document.getElementById('personDetailTitle');
             
             // Filtrer les entrées de cette personne
-            const personEntries = appData.entries.filter(e => e.person === person && !e.deleted);
+            const personEntries = appData.entries.filter(e => e.person === person);
             const sortedEntries = personEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
             
             // Calculer les statistiques
@@ -1462,9 +1614,9 @@
                             </div>
                             <div class="detail-entry-info">
                                 <div>⏰ ${entry.arrival} - ${entry.departure}</div>
-                                <div>📍 ${entry.tasks.length} tâche(s)</div>
+                                <div>📍 ${entry.tasks ? entry.tasks.length : 0} tâche(s)</div>
                             </div>
-                            ${entry.tasks.length > 0 ? `
+                            ${entry.tasks && entry.tasks.length > 0 ? `
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
                                     ${entry.tasks.map(task => `
                                         <div style="font-size: 14px; color: #4b5563; padding: 4px 0;">
@@ -1495,6 +1647,37 @@
         document.getElementById('departureHour').addEventListener('input', function(e) {
             if (e.target.value.length === 2) {
                 document.getElementById('departureMin').focus();
+            }
+        });
+
+        // Auto-sync toutes les 30 secondes si on a un sheet configuré
+        setInterval(() => {
+            if (appData.sheetId && !syncInProgress && document.visibilityState === 'visible') {
+                syncFromSheets();
+            }
+        }, 30000);
+
+        // Sync quand la page redevient visible
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden && appData.sheetId) {
+                // Réinitialiser et synchroniser quand on revient sur la page
+                showLoading(true);
+                appData.persons = [];
+                appData.entries = [];
+                await syncFromSheets();
+                showLoading(false);
+            }
+        });
+
+        // Auto-refresh au focus de la fenêtre
+        window.addEventListener('focus', async () => {
+            if (appData.sheetId) {
+                // Réinitialiser et synchroniser quand la fenêtre reprend le focus
+                showLoading(true);
+                appData.persons = [];
+                appData.entries = [];
+                await syncFromSheets();
+                showLoading(false);
             }
         });
 
