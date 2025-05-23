@@ -745,6 +745,12 @@
             <button class="btn btn-primary" onclick="saveSettings()">
                 💾 Sauvegarder
             </button>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <button class="btn btn-success" onclick="importFromSheets()">
+                    📥 Importer depuis Google Sheets
+                </button>
+            </div>
 
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                 <button class="btn btn-danger" onclick="if(confirm('Êtes-vous sûr de vouloir réinitialiser toutes les données ?')) resetApp()">
@@ -1090,6 +1096,10 @@
             // Afficher un indicateur de chargement
             showSuccess('Envoi vers Google Sheets...');
             
+            // Formater la date en JJ/MM
+            const dateObj = new Date(entry.date);
+            const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+            
             // Envoyer les données
             fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -1098,11 +1108,11 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    date: entry.date,
                     person: entry.person,
+                    date: formattedDate,
+                    hours: entry.hours,
                     arrival: entry.arrival,
                     departure: entry.departure,
-                    hours: entry.hours,
                     tasks: entry.tasks
                 })
             })
@@ -1115,15 +1125,84 @@
             });
         }
 
-        // Import from Google Sheets (placeholder)
+        // Import from Google Sheets
         function importFromSheets() {
             if (!appData.sheetId) {
                 alert('Veuillez d\'abord configurer l\'ID du Google Sheet');
                 return;
             }
             
-            // TODO: Implémenter l'import réel depuis Google Sheets
-            showSuccess('Import depuis Google Sheets (à implémenter)');
+            showSuccess('Import en cours...');
+            
+            // URL publique pour lire le CSV
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${appData.sheetId}/export?format=csv`;
+            
+            fetch(csvUrl)
+                .then(response => response.text())
+                .then(csv => {
+                    // Parser le CSV
+                    const lines = csv.split('\n');
+                    const entries = [];
+                    let importedPersons = new Set(appData.persons);
+                    
+                    // Parcourir les lignes (ignorer l'en-tête)
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        // Gérer les virgules dans les valeurs CSV
+                        const values = line.split(',').map(v => v.trim());
+                        
+                        if (values.length >= 3) {
+                            const person = values[0];
+                            const dateStr = values[1];
+                            const hours = parseFloat(values[2]);
+                            
+                            // Ajouter la personne si elle n'existe pas
+                            if (person && person !== '') {
+                                importedPersons.add(person);
+                            }
+                            
+                            // Convertir la date du format JJ/MM en format YYYY-MM-DD
+                            let formattedDate = '';
+                            if (dateStr && dateStr.includes('/')) {
+                                const [day, month] = dateStr.split('/');
+                                const year = new Date().getFullYear();
+                                formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            }
+                            
+                            if (person && formattedDate && hours) {
+                                entries.push({
+                                    id: Date.now() + i,
+                                    person: person,
+                                    date: formattedDate,
+                                    arrival: 'Importé',
+                                    departure: 'Importé',
+                                    hours: hours,
+                                    tasks: ['Données importées depuis Google Sheets']
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Mettre à jour la liste des personnes
+                    appData.persons = Array.from(importedPersons);
+                    
+                    // Ajouter les nouvelles entrées
+                    appData.entries = [...appData.entries, ...entries];
+                    
+                    // Sauvegarder et mettre à jour l'interface
+                    saveData();
+                    updatePersonSelect();
+                    displayEntries();
+                    updateStats();
+                    
+                    showSuccess(`${entries.length} entrées importées avec succès !`);
+                })
+                .catch(error => {
+                    alert('Erreur lors de l\'import. Assurez-vous que votre Google Sheet est partagé en lecture.');
+                    console.error('Erreur import:', error);
+                });
         }
 
         // Close modal when clicking outside
