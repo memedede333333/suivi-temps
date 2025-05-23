@@ -1150,13 +1150,16 @@
                         const line = lines[i].trim();
                         if (!line) continue;
                         
-                        // Gérer les virgules dans les valeurs CSV
-                        const values = line.split(',').map(v => v.trim());
+                        // Parser la ligne CSV en gérant les virgules dans les valeurs
+                        const values = parseCSVLine(line);
                         
                         if (values.length >= 3) {
                             const person = values[0];
                             const dateStr = values[1];
                             const hours = parseFloat(values[2]);
+                            const arrival = values[3] || 'Non renseigné';
+                            const departure = values[4] || 'Non renseigné';
+                            const tasksStr = values[5] || '';
                             
                             // Ajouter la personne si elle n'existe pas
                             if (person && person !== '') {
@@ -1171,25 +1174,28 @@
                                 formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             }
                             
+                            // Parser les tâches (séparées par des virgules)
+                            const tasks = tasksStr ? tasksStr.split(',').map(t => t.trim()).filter(t => t) : [];
+                            
                             if (person && formattedDate && hours) {
                                 entries.push({
                                     id: Date.now() + i,
                                     person: person,
                                     date: formattedDate,
-                                    arrival: 'Importé',
-                                    departure: 'Importé',
+                                    arrival: arrival,
+                                    departure: departure,
                                     hours: hours,
-                                    tasks: ['Données importées depuis Google Sheets']
+                                    tasks: tasks.length > 0 ? tasks : ['Aucune tâche spécifiée']
                                 });
                             }
                         }
                     }
                     
                     // Mettre à jour la liste des personnes
-                    appData.persons = Array.from(importedPersons);
+                    appData.persons = Array.from(importedPersons).sort();
                     
-                    // Ajouter les nouvelles entrées
-                    appData.entries = [...appData.entries, ...entries];
+                    // Remplacer toutes les entrées par les nouvelles (éviter les doublons)
+                    appData.entries = entries;
                     
                     // Sauvegarder et mettre à jour l'interface
                     saveData();
@@ -1203,6 +1209,29 @@
                     alert('Erreur lors de l\'import. Assurez-vous que votre Google Sheet est partagé en lecture.');
                     console.error('Erreur import:', error);
                 });
+        }
+        
+        // Fonction pour parser une ligne CSV correctement
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            values.push(current.trim());
+            return values;
         }
 
         // Close modal when clicking outside
