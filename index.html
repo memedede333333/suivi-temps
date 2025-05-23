@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi Temps de Travail - Vidage Maison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #22d3ee;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+            opacity: 0.1;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .app-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .app-subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--dark);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.3s ease;
+            z-index: -1;
+        }
+
+        .nav-tab:hover::before {
+            width: 100%;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .nav-tab:hover {
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-icon:hover {
+            transform: rotate(90deg);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -60%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+        }
+
+        .entry-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .entry-item {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .entry-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .entry-item:hover {
+            background: #e5e7eb;
+            padding-left: 20px;
+        }
+
+        .entry-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .entry-info {
+            flex: 1;
+        }
+
+        .entry-person {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .entry-details {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .entry-hours {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--success);
+            margin-right: 10px;
+        }
+
+        .task-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .task-item {
+            font-size: 14px;
+            color: #4b5563;
+            padding: 4px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .task-item::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: var(--radius);
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            position: relative;
+        }
+
+        .person-stats {
+            margin-top: 20px;
+        }
+
+        .person-stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .person-stat-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .person-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .person-hours {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hours-bar {
+            width: 100px;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hours-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .success-message {
+            background: var(--success);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .floating-add {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .floating-add:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.7);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .time-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .time-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .time-input {
+            width: 60px;
+            text-align: center;
+            padding: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .nav-tabs {
+                gap: 5px;
+                padding: 5px;
+            }
+            
+            .nav-tab {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1 class="app-title">⏱️ Suivi Temps</h1>
+            <p class="app-subtitle">Gestion du temps de travail - Vidage maison</p>
+            <svg class="settings-icon" onclick="openSettings()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m3.5-13.5L21 12l-5.5 6.5L12 15l-3.5 3.5L3 12l5.5-6.5L12 9"></path>
+            </svg>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('entry')">📝 Saisie</button>
+            <button class="nav-tab" onclick="showTab('list')">📋 Liste</button>
+            <button class="nav-tab" onclick="showTab('stats')">📊 Stats</button>
+        </div>
+
+        <div id="successMessage" style="display: none;"></div>
+
+        <!-- Tab Saisie -->
+        <div id="entry-tab" class="tab-content active">
+            <div class="card">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Nouvelle entrée</h2>
+                
+                <div class="form-group">
+                    <label for="person">Personne</label>
+                    <select id="person" required>
+                        <option value="">Sélectionner une personne</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Heures de travail</label>
+                    <div class="time-display">
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Arrivée</label>
+                            <div class="time-input-group">
+                                <input type="number" id="arrivalHour" class="time-input" min="0" max="23" placeholder="HH">
+                                <span>:</span>
+                                <input type="number" id="arrivalMin" class="time-input" min="0" max="59" placeholder="MM">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Départ</label>
+                            <div class="time-input-group">
+                                <input type="number" id="departureHour" class="time-input" min="0" max="23" placeholder="HH">
+                                <span>:</span>
+                                <input type="number" id="departureMin" class="time-input" min="0" max="59" placeholder="MM">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tasks">Tâches accomplies (une par ligne)</label>
+                    <textarea id="tasks" rows="4" placeholder="Ex:&#10;Tri des cartons&#10;Nettoyage du grenier&#10;Évacuation des meubles"></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="saveEntry()">
+                    💾 Enregistrer
+                </button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">⚡ Saisie rapide</h3>
+                <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">
+                    Entrez directement le nombre d'heures travaillées
+                </p>
+                <div class="form-group">
+                    <label for="quickHours">Nombre d'heures</label>
+                    <input type="number" id="quickHours" min="0" max="24" step="0.5" placeholder="Ex: 7.5">
+                </div>
+                <button class="btn btn-success" onclick="quickEntry()">
+                    ⚡ Saisie rapide
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Liste -->
+        <div id="list-tab" class="tab-content">
+            <div class="card">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">📋 Entrées récentes</h2>
+                <div id="entriesList" class="entry-list"></div>
+            </div>
+        </div>
+
+        <!-- Tab Stats -->
+        <div id="stats-tab" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalHours">0</div>
+                    <div class="stat-label">Heures totales</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="stat-value" id="totalDays">0</div>
+                    <div class="stat-label">Jours travaillés</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="stat-value" id="avgHours">0</div>
+                    <div class="stat-label">Moyenne heures/jour</div>
+                </div>
+            </div>
+
+            <div class="card person-stats">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">👥 Heures par personne</h3>
+                <div id="personStats"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Settings -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚙️ Configuration</h3>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="sheetId">ID Google Sheet</label>
+                <input type="text" id="sheetId" placeholder="Entrez l'ID de votre Google Sheet">
+                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                    L'ID se trouve dans l'URL de votre sheet
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label>Personnes</label>
+                <div id="personsList" style="margin-bottom: 10px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="newPerson" placeholder="Nouvelle personne">
+                    <button class="btn btn-success btn-small" onclick="addPerson()">Ajouter</button>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveSettings()">
+                💾 Sauvegarder
+            </button>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <button class="btn btn-danger" onclick="if(confirm('Êtes-vous sûr de vouloir réinitialiser toutes les données ?')) resetApp()">
+                    🗑️ Réinitialiser l'application
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="floating-add" onclick="showTab('entry')">+</div>
+
+    <script>
+        // State management
+        let appData = {
+            sheetId: '',
+            persons: ['Jean', 'Marie', 'Pierre', 'Sophie'],
+            entries: []
+        };
+
+        // Initialize app
+        function initApp() {
+            const saved = localStorage.getItem('timeTrackingData');
+            if (saved) {
+                appData = JSON.parse(saved);
+            }
+            
+            // Set today's date as default
+            document.getElementById('date').valueAsDate = new Date();
+            
+            updatePersonSelect();
+            updateStats();
+            displayEntries();
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Add active class to selected nav tab
+            event.target.classList.add('active');
+            
+            // Update data when showing tabs
+            if (tabName === 'list') {
+                displayEntries();
+            } else if (tabName === 'stats') {
+                updateStats();
+            }
+        }
+
+        // Settings management
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('sheetId').value = appData.sheetId;
+            displayPersonsList();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            appData.sheetId = document.getElementById('sheetId').value;
+            saveData();
+            updatePersonSelect();
+            closeSettings();
+            showSuccess('Configuration sauvegardée !');
+        }
+
+        function displayPersonsList() {
+            const container = document.getElementById('personsList');
+            container.innerHTML = appData.persons.map((person, index) => `
+                <div class="entry-item" style="margin-bottom: 5px;">
+                    <span>${person}</span>
+                    <button class="btn btn-danger btn-small" onclick="removePerson(${index})">Supprimer</button>
+                </div>
+            `).join('');
+        }
+
+        function addPerson() {
+            const input = document.getElementById('newPerson');
+            const name = input.value.trim();
+            
+            if (name && !appData.persons.includes(name)) {
+                appData.persons.push(name);
+                saveData();
+                input.value = '';
+                displayPersonsList();
+                updatePersonSelect();
+                showSuccess(`${name} ajouté(e) !`);
+            }
+        }
+
+        function removePerson(index) {
+            const person = appData.persons[index];
+            if (confirm(`Supprimer ${person} ?`)) {
+                appData.persons.splice(index, 1);
+                saveData();
+                displayPersonsList();
+                updatePersonSelect();
+            }
+        }
+
+        function updatePersonSelect() {
+            const select = document.getElementById('person');
+            select.innerHTML = '<option value="">Sélectionner une personne</option>' +
+                appData.persons.map(person => `<option value="${person}">${person}</option>`).join('');
+        }
+
+        // Entry management
+        function saveEntry() {
+            const person = document.getElementById('person').value;
+            const date = document.getElementById('date').value;
+            const arrivalHour = document.getElementById('arrivalHour').value.padStart(2, '0');
+            const arrivalMin = document.getElementById('arrivalMin').value.padStart(2, '0');
+            const departureHour = document.getElementById('departureHour').value.padStart(2, '0');
+            const departureMin = document.getElementById('departureMin').value.padStart(2, '0');
+            const tasks = document.getElementById('tasks').value;
+            
+            if (!person || !date || !arrivalHour || !arrivalMin || !departureHour || !departureMin) {
+                alert('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+            
+            const arrival = `${arrivalHour}:${arrivalMin}`;
+            const departure = `${departureHour}:${departureMin}`;
+            const hours = calculateHours(arrival, departure);
+            
+            if (hours <= 0) {
+                alert('L\'heure de départ doit être après l\'heure d\'arrivée');
+                return;
+            }
+            
+            const entry = {
+                id: Date.now(),
+                person,
+                date,
+                arrival,
+                departure,
+                hours,
+                tasks: tasks.split('\n').filter(t => t.trim())
+            };
+            
+            appData.entries.push(entry);
+            saveData();
+            syncToGoogleSheets(entry);
+            
+            // Reset form
+            document.getElementById('person').value = '';
+            document.getElementById('arrivalHour').value = '';
+            document.getElementById('arrivalMin').value = '';
+            document.getElementById('departureHour').value = '';
+            document.getElementById('departureMin').value = '';
+            document.getElementById('tasks').value = '';
+            
+            showSuccess('Entrée enregistrée avec succès !');
+        }
+
+        function quickEntry() {
+            const person = document.getElementById('person').value;
+            const date = document.getElementById('date').value;
+            const hours = parseFloat(document.getElementById('quickHours').value);
+            
+            if (!person || !date || !hours) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            const entry = {
+                id: Date.now(),
+                person,
+                date,
+                arrival: 'N/A',
+                departure: 'N/A',
+                hours,
+                tasks: ['Saisie rapide']
+            };
+            
+            appData.entries.push(entry);
+            saveData();
+            syncToGoogleSheets(entry);
+            
+            document.getElementById('quickHours').value = '';
+            showSuccess('Saisie rapide enregistrée !');
+        }
+
+        function calculateHours(arrival, departure) {
+            const [ah, am] = arrival.split(':').map(Number);
+            const [dh, dm] = departure.split(':').map(Number);
+            
+            const arrivalMinutes = ah * 60 + am;
+            const departureMinutes = dh * 60 + dm;
+            
+            const diffMinutes = departureMinutes - arrivalMinutes;
+            return Math.round((diffMinutes / 60) * 10) / 10;
+        }
+
+        function displayEntries() {
+            const container = document.getElementById('entriesList');
+            const sortedEntries = [...appData.entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (sortedEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>Aucune entrée pour le moment</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sortedEntries.map(entry => `
+                <div class="entry-item">
+                    <div class="entry-info">
+                        <div class="entry-person">${entry.person}</div>
+                        <div class="entry-details">
+                            📅 ${formatDate(entry.date)} | ⏰ ${entry.arrival} - ${entry.departure}
+                        </div>
+                        ${entry.tasks.length > 0 ? `
+                            <div class="task-list">
+                                ${entry.tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="entry-hours">${entry.hours}h</span>
+                        <button class="btn btn-danger btn-small" onclick="deleteEntry(${entry.id})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteEntry(id) {
+            if (confirm('Supprimer cette entrée ?')) {
+                appData.entries = appData.entries.filter(e => e.id !== id);
+                saveData();
+                displayEntries();
+                updateStats();
+                showSuccess('Entrée supprimée');
+            }
+        }
+
+        function updateStats() {
+            // Calculate total hours
+            const totalHours = appData.entries.reduce((sum, entry) => sum + entry.hours, 0);
+            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            
+            // Calculate total days
+            const uniqueDays = new Set(appData.entries.map(e => e.date)).size;
+            document.getElementById('totalDays').textContent = uniqueDays;
+            
+            // Calculate average hours per day
+            const avgHours = uniqueDays > 0 ? (totalHours / uniqueDays).toFixed(1) : '0';
+            document.getElementById('avgHours').textContent = avgHours;
+            
+            // Calculate hours per person
+            const personHours = {};
+            appData.entries.forEach(entry => {
+                personHours[entry.person] = (personHours[entry.person] || 0) + entry.hours;
+            });
+            
+            const maxHours = Math.max(...Object.values(personHours), 1);
+            
+            const personStatsContainer = document.getElementById('personStats');
+            const sortedPersons = Object.entries(personHours)
+                .sort((a, b) => b[1] - a[1]);
+            
+            if (sortedPersons.length === 0) {
+                personStatsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <p>Aucune donnée disponible</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            personStatsContainer.innerHTML = sortedPersons.map(([person, hours]) => `
+                <div class="person-stat-item">
+                    <span class="person-name">${person}</span>
+                    <div class="person-hours">
+                        <div class="hours-bar">
+                            <div class="hours-fill" style="width: ${(hours / maxHours) * 100}%"></div>
+                        </div>
+                        <span style="font-weight: 600; color: var(--primary);">${hours.toFixed(1)}h</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+            const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+            return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+        }
+
+        function showSuccess(message) {
+            const msgDiv = document.getElementById('successMessage');
+            msgDiv.textContent = message;
+            msgDiv.className = 'success-message';
+            msgDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function saveData() {
+            localStorage.setItem('timeTrackingData', JSON.stringify(appData));
+        }
+
+        function resetApp() {
+            if (confirm('Cette action supprimera toutes les données. Continuer ?')) {
+                localStorage.removeItem('timeTrackingData');
+                appData = {
+                    sheetId: '',
+                    persons: ['Jean', 'Marie', 'Pierre', 'Sophie'],
+                    entries: []
+                };
+                initApp();
+                closeSettings();
+                showSuccess('Application réinitialisée');
+            }
+        }
+
+        // Google Sheets integration (placeholder)
+        function syncToGoogleSheets(entry) {
+            if (!appData.sheetId) return;
+            
+            // Dans une vraie application, vous utiliseriez l'API Google Sheets ici
+            console.log('Syncing to Google Sheets:', entry);
+            
+            // Exemple de structure de données pour Google Sheets:
+            // [Date, Personne, Arrivée, Départ, Heures, Tâches]
+            const rowData = [
+                entry.date,
+                entry.person,
+                entry.arrival,
+                entry.departure,
+                entry.hours,
+                entry.tasks.join(', ')
+            ];
+            
+            // TODO: Implémenter l'appel API réel
+            // Pour cela, vous aurez besoin de:
+            // 1. Google Sheets API activée
+            // 2. Authentification OAuth2
+            // 3. Permissions d'écriture sur le sheet
+        }
+
+        // Import from Google Sheets (placeholder)
+        function importFromSheets() {
+            if (!appData.sheetId) {
+                alert('Veuillez d\'abord configurer l\'ID du Google Sheet');
+                return;
+            }
+            
+            // TODO: Implémenter l'import réel depuis Google Sheets
+            showSuccess('Import depuis Google Sheets (à implémenter)');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        }
+
+        // Format time inputs
+        document.getElementById('arrivalHour').addEventListener('input', function(e) {
+            if (e.target.value.length === 2) {
+                document.getElementById('arrivalMin').focus();
+            }
+        });
+
+        document.getElementById('departureHour').addEventListener('input', function(e) {
+            if (e.target.value.length === 2) {
+                document.getElementById('departureMin').focus();
+            }
+        });
+
+        // Initialize app on load
+        initApp();
+    </script>
+</body>
+</html>
