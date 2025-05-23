@@ -1080,29 +1080,39 @@
             }
         }
 
-        // Google Sheets integration (placeholder)
+        // Google Sheets integration
         function syncToGoogleSheets(entry) {
             if (!appData.sheetId) return;
             
-            // Dans une vraie application, vous utiliseriez l'API Google Sheets ici
-            console.log('Syncing to Google Sheets:', entry);
+            // Votre URL Google Apps Script
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlA0flQHjbFzzQUo0OnMgguuApvwwUEK2CmLXWpw-Koo7XJquH6yGO4D3fM8i5E9nx/exec';
             
-            // Exemple de structure de données pour Google Sheets:
-            // [Date, Personne, Arrivée, Départ, Heures, Tâches]
-            const rowData = [
-                entry.date,
-                entry.person,
-                entry.arrival,
-                entry.departure,
-                entry.hours,
-                entry.tasks.join(', ')
-            ];
+            // Afficher un indicateur de chargement
+            showSuccess('Envoi vers Google Sheets...');
             
-            // TODO: Implémenter l'appel API réel
-            // Pour cela, vous aurez besoin de:
-            // 1. Google Sheets API activée
-            // 2. Authentification OAuth2
-            // 3. Permissions d'écriture sur le sheet
+            // Envoyer les données
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    date: entry.date,
+                    person: entry.person,
+                    arrival: entry.arrival,
+                    departure: entry.departure,
+                    hours: entry.hours,
+                    tasks: entry.tasks
+                })
+            })
+            .then(() => {
+                console.log('Données envoyées à Google Sheets avec succès');
+            })
+            .catch(error => {
+                console.error('Erreur lors de la synchronisation:', error);
+                showSuccess('Erreur de synchronisation - données sauvegardées localement');
+            });
         }
 
         // Import from Google Sheets (placeholder)
