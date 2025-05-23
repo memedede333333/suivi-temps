@@ -300,73 +300,6 @@
             animation: slideIn 0.3s ease;
         }
 
-        .person-detail-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--light);
-        }
-
-        .person-detail-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .detail-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .detail-stat-card {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .detail-stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .detail-stat-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 5px;
-        }
-
-        .detail-entries {
-            margin-top: 20px;
-        }
-
-        .detail-entry {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .detail-entry-date {
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 8px;
-        }
-
-        .detail-entry-info {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            font-size: 14px;
-            color: #6b7280;
-        }
-
         @keyframes slideIn {
             from {
                 transform: translate(-50%, -60%);
@@ -545,6 +478,7 @@
             align-items: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .person-stat-item:hover {
@@ -654,6 +588,73 @@
             padding: 8px;
         }
 
+        .person-detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .person-detail-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .detail-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-stat-card {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .detail-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .detail-stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .detail-entries {
+            margin-top: 20px;
+        }
+
+        .detail-entry {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .detail-entry-date {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .detail-entry-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 10px;
@@ -683,9 +684,9 @@
         </div>
 
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('entry')">📝 Saisie</button>
-            <button class="nav-tab" onclick="showTab('list')">📋 Liste</button>
-            <button class="nav-tab" onclick="showTab('stats')">📊 Stats</button>
+            <button class="nav-tab active" onclick="showTab('entry', event)">📝 Saisie</button>
+            <button class="nav-tab" onclick="showTab('list', event)">📋 Liste</button>
+            <button class="nav-tab" onclick="showTab('stats', event)">📊 Stats</button>
         </div>
 
         <div id="successMessage" style="display: none;"></div>
@@ -790,7 +791,7 @@
     </div>
 
     <!-- Modal Settings -->
-    <div id="settingsModal" class="modal">
+    <div id="settingsModal" class="modal" onclick="if(event.target === this) closeSettings()">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">⚙️ Configuration</h3>
@@ -808,11 +809,6 @@
             <div class="form-group">
                 <label>Personnes</label>
                 <div id="personsList" style="margin-bottom: 10px;"></div>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="newPerson" placeholder="Nouvelle personne">
-                    <button class="btn btn-success btn-small" onclick="addPerson()">Ajouter</button>
-                </div>
-            </div>="margin-bottom: 10px;"></div>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="newPerson" placeholder="Nouvelle personne">
                     <button class="btn btn-success btn-small" onclick="addPerson()">Ajouter</button>
@@ -838,7 +834,7 @@
     </div>
 
     <!-- Modal Détails Personne -->
-    <div id="personDetailModal" class="modal">
+    <div id="personDetailModal" class="modal" onclick="if(event.target === this) closePersonDetails()">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title" id="personDetailTitle">Détails</h3>
@@ -846,32 +842,9 @@
             </div>
             <div id="personDetailContent"></div>
         </div>
-    </div>="margin-bottom: 10px;"></div>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="newPerson" placeholder="Nouvelle personne">
-                    <button class="btn btn-success btn-small" onclick="addPerson()">Ajouter</button>
-                </div>
-            </div>
-
-            <button class="btn btn-primary" onclick="saveSettings()">
-                💾 Sauvegarder
-            </button>
-            
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <button class="btn btn-success" onclick="importFromSheets()">
-                    📥 Importer depuis Google Sheets
-                </button>
-            </div>
-
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <button class="btn btn-danger" onclick="if(confirm('Êtes-vous sûr de vouloir réinitialiser toutes les données ?')) resetApp()">
-                    🗑️ Réinitialiser l'application
-                </button>
-            </div>
-        </div>
     </div>
 
-    <div class="floating-add" onclick="showTab('entry')">+</div>
+    <div class="floating-add" onclick="showTab('entry', event)">+</div>
 
     <script>
         // State management
@@ -897,7 +870,7 @@
         }
 
         // Tab management
-        function showTab(tabName) {
+        function showTab(tabName, event) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -912,7 +885,16 @@
             document.getElementById(`${tabName}-tab`).classList.add('active');
             
             // Add active class to selected nav tab
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // If no event (called from floating button), activate the right tab
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    if (tab.textContent.includes('Saisie')) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
             
             // Update data when showing tabs
             if (tabName === 'list') {
@@ -944,592 +926,3 @@
         function displayPersonsList() {
             const container = document.getElementById('personsList');
             container.innerHTML = appData.persons.map((person, index) => `
-                <div class="entry-item" style="margin-bottom: 5px;">
-                    <span>${person}</span>
-                    <button class="btn btn-danger btn-small" onclick="removePerson(${index})">Supprimer</button>
-                </div>
-            `).join('');
-        }
-
-        function addPerson() {
-            const input = document.getElementById('newPerson');
-            const name = input.value.trim();
-            
-            if (name && !appData.persons.includes(name)) {
-                appData.persons.push(name);
-                saveData();
-                input.value = '';
-                displayPersonsList();
-                updatePersonSelect();
-                showSuccess(`${name} ajouté(e) !`);
-            }
-        }
-
-        function removePerson(index) {
-            const person = appData.persons[index];
-            const code = prompt(`Supprimer ${person} ?\n\nEntrez le code de sécurité :`);
-            
-            if (code === '333') {
-                appData.persons.splice(index, 1);
-                saveData();
-                displayPersonsList();
-                updatePersonSelect();
-                showSuccess(`${person} supprimé(e)`);
-            } else if (code !== null) {
-                alert('Code incorrect');
-            }
-        }
-
-        function updatePersonSelect() {
-            const select = document.getElementById('person');
-            select.innerHTML = '<option value="">Sélectionner une personne</option>' +
-                appData.persons.map(person => `<option value="${person}">${person}</option>`).join('');
-        }
-
-        // Entry management
-        function saveEntry() {
-            const person = document.getElementById('person').value;
-            const date = document.getElementById('date').value;
-            const arrivalHour = document.getElementById('arrivalHour').value.padStart(2, '0');
-            const arrivalMin = document.getElementById('arrivalMin').value.padStart(2, '0');
-            const departureHour = document.getElementById('departureHour').value.padStart(2, '0');
-            const departureMin = document.getElementById('departureMin').value.padStart(2, '0');
-            const tasks = document.getElementById('tasks').value;
-            
-            if (!person || !date || !arrivalHour || !arrivalMin || !departureHour || !departureMin) {
-                alert('Veuillez remplir tous les champs obligatoires');
-                return;
-            }
-            
-            const arrival = `${arrivalHour}:${arrivalMin}`;
-            const departure = `${departureHour}:${departureMin}`;
-            const hours = calculateHours(arrival, departure);
-            
-            if (hours <= 0) {
-                alert('L\'heure de départ doit être après l\'heure d\'arrivée');
-                return;
-            }
-            
-            const entry = {
-                id: Date.now(),
-                person,
-                date,
-                arrival,
-                departure,
-                hours,
-                tasks: tasks.split('\n').filter(t => t.trim())
-            };
-            
-            appData.entries.push(entry);
-            saveData();
-            syncToGoogleSheets(entry);
-            
-            // Reset form
-            document.getElementById('person').value = '';
-            document.getElementById('arrivalHour').value = '';
-            document.getElementById('arrivalMin').value = '';
-            document.getElementById('departureHour').value = '';
-            document.getElementById('departureMin').value = '';
-            document.getElementById('tasks').value = '';
-            
-            showSuccess('Entrée enregistrée avec succès !');
-        }
-
-        function quickEntry() {
-            const person = document.getElementById('person').value;
-            const date = document.getElementById('date').value;
-            const hours = parseFloat(document.getElementById('quickHours').value);
-            
-            if (!person || !date || !hours) {
-                alert('Veuillez remplir tous les champs');
-                return;
-            }
-            
-            const entry = {
-                id: Date.now(),
-                person,
-                date,
-                arrival: 'N/A',
-                departure: 'N/A',
-                hours,
-                tasks: ['Saisie rapide']
-            };
-            
-            appData.entries.push(entry);
-            saveData();
-            syncToGoogleSheets(entry);
-            
-            document.getElementById('quickHours').value = '';
-            showSuccess('Saisie rapide enregistrée !');
-        }
-
-        function calculateHours(arrival, departure) {
-            const [ah, am] = arrival.split(':').map(Number);
-            const [dh, dm] = departure.split(':').map(Number);
-            
-            const arrivalMinutes = ah * 60 + am;
-            const departureMinutes = dh * 60 + dm;
-            
-            const diffMinutes = departureMinutes - arrivalMinutes;
-            return Math.round((diffMinutes / 60) * 10) / 10;
-        }
-
-        function displayEntries() {
-            const container = document.getElementById('entriesList');
-            // Filtrer les entrées non supprimées et trier
-            const activeEntries = appData.entries.filter(e => !e.deleted);
-            const sortedEntries = [...activeEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            if (sortedEntries.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <p>Aucune entrée pour le moment</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = sortedEntries.map(entry => `
-                <div class="entry-item">
-                    <div class="entry-info">
-                        <div class="entry-person">${entry.person}</div>
-                        <div class="entry-details">
-                            📅 ${formatDate(entry.date)} | ⏰ ${entry.arrival} - ${entry.departure}
-                        </div>
-                        ${entry.tasks.length > 0 ? `
-                            <div class="task-list">
-                                ${entry.tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <span class="entry-hours">${entry.hours}h</span>
-                        <button class="btn btn-danger btn-small" onclick="deleteEntry(${entry.id})">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function deleteEntry(id) {
-            const code = prompt('Entrez le code de sécurité pour supprimer :');
-            
-            if (code === '333') {
-                const entry = appData.entries.find(e => e.id === id);
-                if (entry) {
-                    // Marquer comme supprimé au lieu de supprimer
-                    entry.deleted = true;
-                    entry.deletedAt = new Date().toLocaleString('fr-FR');
-                    
-                    // Envoyer la mise à jour à Google Sheets
-                    if (appData.sheetId) {
-                        updateEntryInSheets(entry);
-                    }
-                    
-                    saveData();
-                    displayEntries();
-                    updateStats();
-                    showSuccess('Entrée supprimée');
-                }
-            } else if (code !== null) {
-                alert('Code incorrect');
-            }
-        }
-        
-        // Nouvelle fonction pour mettre à jour une entrée dans Sheets
-        function updateEntryInSheets(entry) {
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlA0flQHjbFzzQUo0OnMgguuApvwwUEK2CmLXWpw-Koo7XJquH6yGO4D3fM8i5E9nx/exec';
-            
-            const dateObj = new Date(entry.date);
-            const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'update',
-                    person: entry.person,
-                    date: formattedDate,
-                    hours: entry.hours,
-                    arrival: entry.arrival,
-                    departure: entry.departure,
-                    tasks: entry.tasks,
-                    deleted: entry.deletedAt
-                })
-            });
-        }
-
-        function updateStats() {
-            // Filtrer les entrées non supprimées
-            const activeEntries = appData.entries.filter(e => !e.deleted);
-            
-            // Calculate total hours
-            const totalHours = activeEntries.reduce((sum, entry) => sum + entry.hours, 0);
-            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
-            
-            // Calculate total days
-            const uniqueDays = new Set(activeEntries.map(e => e.date)).size;
-            document.getElementById('totalDays').textContent = uniqueDays;
-            
-            // Calculate average hours per day
-            const avgHours = uniqueDays > 0 ? (totalHours / uniqueDays).toFixed(1) : '0';
-            document.getElementById('avgHours').textContent = avgHours;
-            
-            // Calculate hours per person
-            const personHours = {};
-            activeEntries.forEach(entry => {
-                personHours[entry.person] = (personHours[entry.person] || 0) + entry.hours;
-            });
-            
-            const maxHours = Math.max(...Object.values(personHours), 1);
-            
-            const personStatsContainer = document.getElementById('personStats');
-            const sortedPersons = Object.entries(personHours)
-                .sort((a, b) => b[1] - a[1]);
-            
-            if (sortedPersons.length === 0) {
-                personStatsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <p>Aucune donnée disponible</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            personStatsContainer.innerHTML = sortedPersons.map(([person, hours]) => `
-                <div class="person-stat-item" onclick="showPersonDetails('${person}')" style="cursor: pointer;">
-                    <span class="person-name">${person}</span>
-                    <div class="person-hours">
-                        <div class="hours-bar">
-                            <div class="hours-fill" style="width: ${(hours / maxHours) * 100}%"></div>
-                        </div>
-                        <span style="font-weight: 600; color: var(--primary);">${hours.toFixed(1)}h</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-            return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
-        }
-
-        function showSuccess(message) {
-            const msgDiv = document.getElementById('successMessage');
-            msgDiv.textContent = message;
-            msgDiv.className = 'success-message';
-            msgDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                msgDiv.style.display = 'none';
-            }, 3000);
-        }
-
-        function saveData() {
-            localStorage.setItem('timeTrackingData', JSON.stringify(appData));
-        }
-
-        function resetApp() {
-            const code = prompt('Entrez le code de sécurité pour réinitialiser :');
-            
-            if (code === '333') {
-                if (confirm('Cette action supprimera toutes les données. Continuer ?')) {
-                    localStorage.removeItem('timeTrackingData');
-                    appData = {
-                        sheetId: '',
-                        persons: ['Jean', 'Marie', 'Pierre', 'Sophie'],
-                        entries: []
-                    };
-                    initApp();
-                    closeSettings();
-                    showSuccess('Application réinitialisée');
-                }
-            } else if (code !== null) {
-                alert('Code incorrect');
-            }
-        }
-
-        // Google Sheets integration
-        function syncToGoogleSheets(entry) {
-            if (!appData.sheetId) return;
-            
-            // Votre URL Google Apps Script
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlA0flQHjbFzzQUo0OnMgguuApvwwUEK2CmLXWpw-Koo7XJquH6yGO4D3fM8i5E9nx/exec';
-            
-            // Afficher un indicateur de chargement
-            showSuccess('Envoi vers Google Sheets...');
-            
-            // Formater la date en JJ/MM
-            const dateObj = new Date(entry.date);
-            const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
-            
-            // Envoyer les données
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    person: entry.person,
-                    date: formattedDate,
-                    hours: entry.hours,
-                    arrival: entry.arrival,
-                    departure: entry.departure,
-                    tasks: entry.tasks
-                })
-            })
-            .then(() => {
-                console.log('Données envoyées à Google Sheets avec succès');
-            })
-            .catch(error => {
-                console.error('Erreur lors de la synchronisation:', error);
-                showSuccess('Erreur de synchronisation - données sauvegardées localement');
-            });
-        }
-
-        // Import from Google Sheets
-        function importFromSheets() {
-            const code = prompt('Entrez le code de sécurité pour importer :');
-            
-            if (code !== '333') {
-                if (code !== null) alert('Code incorrect');
-                return;
-            }
-            
-            if (!appData.sheetId) {
-                alert('Veuillez d\'abord configurer l\'ID du Google Sheet');
-                return;
-            }
-            
-            showSuccess('Import en cours...');
-            
-            // URL publique pour lire le CSV
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${appData.sheetId}/export?format=csv`;
-            
-            fetch(csvUrl)
-                .then(response => response.text())
-                .then(csv => {
-                    // Parser le CSV
-                    const lines = csv.split('\n');
-                    const entries = [];
-                    let importedPersons = new Set(appData.persons);
-                    
-                    // Parcourir les lignes (ignorer l'en-tête)
-                    for (let i = 1; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        if (!line) continue;
-                        
-                        // Parser la ligne CSV en gérant les virgules dans les valeurs
-                        const values = parseCSVLine(line);
-                        
-                        // Vérifier si l'entrée est supprimée (colonne G)
-                        if (values[6] && values[6].trim() !== '') {
-                            continue; // Ignorer les entrées supprimées
-                        }
-                        
-                        if (values.length >= 3) {
-                            const person = values[0];
-                            const dateStr = values[1];
-                            const hours = parseFloat(values[2]);
-                            const arrival = values[3] || 'Non renseigné';
-                            const departure = values[4] || 'Non renseigné';
-                            const tasksStr = values[5] || '';
-                            
-                            // Ajouter la personne si elle n'existe pas
-                            if (person && person !== '') {
-                                importedPersons.add(person);
-                            }
-                            
-                            // Convertir la date du format JJ/MM en format YYYY-MM-DD
-                            let formattedDate = '';
-                            if (dateStr && dateStr.includes('/')) {
-                                const [day, month] = dateStr.split('/');
-                                const year = new Date().getFullYear();
-                                formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            }
-                            
-                            // Parser les tâches (séparées par des virgules)
-                            const tasks = tasksStr ? tasksStr.split(',').map(t => t.trim()).filter(t => t) : [];
-                            
-                            if (person && formattedDate && hours) {
-                                entries.push({
-                                    id: Date.now() + i,
-                                    person: person,
-                                    date: formattedDate,
-                                    arrival: arrival,
-                                    departure: departure,
-                                    hours: hours,
-                                    tasks: tasks.length > 0 ? tasks : ['Aucune tâche spécifiée']
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Mettre à jour la liste des personnes
-                    appData.persons = Array.from(importedPersons).sort();
-                    
-                    // Remplacer toutes les entrées par les nouvelles (éviter les doublons)
-                    appData.entries = entries;
-                    
-                    // Sauvegarder et mettre à jour l'interface
-                    saveData();
-                    updatePersonSelect();
-                    displayEntries();
-                    updateStats();
-                    
-                    showSuccess(`${entries.length} entrées importées avec succès !`);
-                })
-                .catch(error => {
-                    alert('Erreur lors de l\'import. Assurez-vous que votre Google Sheet est partagé en lecture.');
-                    console.error('Erreur import:', error);
-                });
-        }
-        
-        // Fonction pour parser une ligne CSV correctement
-        function parseCSVLine(line) {
-            const values = [];
-            let current = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    values.push(current.trim());
-                    current = '';
-                } else {
-                    current += char;
-                }
-            }
-            
-            values.push(current.trim());
-            return values;
-        }
-
-        // Afficher les détails d'une personne
-        function showPersonDetails(person) {
-            const modal = document.getElementById('personDetailModal');
-            const content = document.getElementById('personDetailContent');
-            const title = document.getElementById('personDetailTitle');
-            
-            // Filtrer les entrées de cette personne
-            const personEntries = appData.entries.filter(e => e.person === person && !e.deleted);
-            const sortedEntries = personEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            // Calculer les statistiques
-            const totalHours = personEntries.reduce((sum, e) => sum + e.hours, 0);
-            const totalDays = new Set(personEntries.map(e => e.date)).size;
-            const avgHours = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : '0';
-            
-            // Calculer les heures par mois
-            const monthlyHours = {};
-            personEntries.forEach(entry => {
-                const date = new Date(entry.date);
-                const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-                monthlyHours[monthKey] = (monthlyHours[monthKey] || 0) + entry.hours;
-            });
-            
-            title.textContent = `📊 Détails pour ${person}`;
-            
-            content.innerHTML = `
-                <div class="detail-stats-grid">
-                    <div class="detail-stat-card">
-                        <div class="detail-stat-value">${totalHours.toFixed(1)}</div>
-                        <div class="detail-stat-label">Heures totales</div>
-                    </div>
-                    <div class="detail-stat-card">
-                        <div class="detail-stat-value">${totalDays}</div>
-                        <div class="detail-stat-label">Jours travaillés</div>
-                    </div>
-                    <div class="detail-stat-card">
-                        <div class="detail-stat-value">${avgHours}</div>
-                        <div class="detail-stat-label">Moyenne h/jour</div>
-                    </div>
-                </div>
-                
-                ${Object.keys(monthlyHours).length > 0 ? `
-                    <div style="margin: 20px 0;">
-                        <h4 style="color: var(--primary); margin-bottom: 10px;">📅 Heures par mois</h4>
-                        ${Object.entries(monthlyHours).map(([month, hours]) => {
-                            const [year, monthNum] = month.split('-');
-                            const monthName = new Date(year, monthNum - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-                            return `
-                                <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--light); border-radius: 6px; margin-bottom: 8px;">
-                                    <span style="text-transform: capitalize;">${monthName}</span>
-                                    <span style="font-weight: 600; color: var(--primary);">${hours.toFixed(1)}h</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : ''}
-                
-                <div class="detail-entries">
-                    <h4 style="color: var(--primary); margin-bottom: 15px;">📝 Historique détaillé</h4>
-                    ${sortedEntries.length > 0 ? sortedEntries.map(entry => `
-                        <div class="detail-entry">
-                            <div class="detail-entry-date">
-                                ${formatDate(entry.date)} - ${entry.hours}h
-                            </div>
-                            <div class="detail-entry-info">
-                                <div>⏰ ${entry.arrival} - ${entry.departure}</div>
-                                <div>📍 ${entry.tasks.length} tâche(s)</div>
-                            </div>
-                            ${entry.tasks.length > 0 ? `
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
-                                    ${entry.tasks.map(task => `
-                                        <div style="font-size: 14px; color: #4b5563; padding: 4px 0;">
-                                            ✓ ${task}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `).join('') : '<p style="text-align: center; color: #6b7280;">Aucune entrée trouvée</p>'}
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-        }
-        
-        function closePersonDetails() {
-            document.getElementById('personDetailModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const settingsModal = document.getElementById('settingsModal');
-            const personModal = document.getElementById('personDetailModal');
-            
-            if (event.target === settingsModal) {
-                closeSettings();
-            } else if (event.target === personModal) {
-                closePersonDetails();
-            }
-        }
-
-        // Format time inputs
-        document.getElementById('arrivalHour').addEventListener('input', function(e) {
-            if (e.target.value.length === 2) {
-                document.getElementById('arrivalMin').focus();
-            }
-        });
-
-        document.getElementById('departureHour').addEventListener('input', function(e) {
-            if (e.target.value.length === 2) {
-                document.getElementById('departureMin').focus();
-            }
-        });
-
-        // Initialize app on load
-        initApp();
-    </script>
-</body>
-</html>
